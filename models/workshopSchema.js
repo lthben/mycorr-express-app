@@ -3,12 +3,13 @@ const mongoose = require("mongoose");
 const workshopSchema = new mongoose.Schema({
   category: { type: String, required: true },
   title: { type: String, required: true },
+  description: { type: String, required: true },
   vacancies: { type: Number, required: true },
   dateStart: { type: String, required: true },
-  courseStartTime: { type: Number },
-  courseEndTime: { type: Number },
+  courseStartTime: { type: String },
+  courseEndTime: { type: String },
   location: { type: String, required: true },
-  participantList: { type: String, required: true },
+  participantList: { type: Array, required: true },
 });
 
 const workshopProfile = mongoose.model("workshopProfile", workshopSchema);

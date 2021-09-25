@@ -16,66 +16,83 @@ mongoose.connect("mongodb://localhost:27017/mycorr", {
 //   console.log("connected to mongo");
 // });
 
+//user profile collection
 //show everything
-app.get("/user", async (req, res) => {
+app.get("/userindex", async (req, res) => {
   const findUserProfile = await userProfile.find();
   res.json(findUserProfile);
-  //   res.send("hello");
 });
 //create new userID
 app.post("/usernew", async (req, res) => {
-  newUser = new userProfile({
-    name: req.body.name,
-    email: req.body.email,
-    enrolment: req.body.enrolment,
-  });
-  await newUser.save();
-  res.redirect("/");
-  //   res.json({ status: "ok,", msg: "saved" });
+  try {
+    newUser = new userProfile({
+      name: req.body.name,
+      email: req.body.email,
+      enrolment: req.body.enrolment,
+    });
+    let response = await newUser.save();
+    console.log("created: ", response);
+    res.send(response);
+    // res.redirect("/");
+    //   res.json({ status: "ok,", msg: "saved" });
+  } catch (err) {
+    console.log(err);
+  }
 });
+
+//seed some users
+const user_seed = require("./models/user_seed");
+app.post("/userseed", async (req, res) => {
+  await userProfile.deleteMany({});
+  await userProfile.create(user_seed, (err, data) => {
+    if (err) console.log(err);
+    else {
+      res.json({ status: "ok", msg: "seeded" });
+      console.log("seeded: ", data);
+    }
+  });
+});
+
 //delete by ID
-app.delete("/:id", async (req, res) => {
+app.delete("/userdelete/:id", async (req, res) => {
   try {
     let response = await userProfile.findByIdAndDelete(req.params.id);
     //   res.json({ status: "ok", msg: "deleted" });
-    // console.log("deleting one by id: ", response);
+    console.log("deleting one by id: ", response);
     res.send(response);
   } catch (err) {
     console.log(err);
   }
 });
 //update by ID
-app.put("/:id", async (req, res) => {
+app.put("/userupdate/:id", async (req, res) => {
   try {
     let response = await userProfile.findByIdAndUpdate(req.params.id, req.body);
-    console.log(response);
+    console.log("user update by ID: ", response);
     //   res.json({ status: "ok", msg: "updated" });
     res.send(response);
   } catch (err) {
     console.log(err);
   }
 });
-///////////////////////////
-///////////////////////////
-///////////////////////////
-///////////////////////////
-///////////////////////////
-///////////////////////////
-///////////////////////////
-///////////////////////////
+// ***************************
+//
+//  workshop collection
+//
+// ***************************
 
-//workshop database collection
-//show everything
-app.get("/wsuser", async (req, res) => {
+//show all workshop profiles
+app.get("/wsindex", async (req, res) => {
   const findworkshopProfile = await workshopProfile.find();
   res.json(findworkshopProfile);
-  //   res.send("hello");
 });
-//create new userID
-app.post("/wsusernew", async (req, res) => {
+
+//create new workshop profile
+app.post("/wsnew", async (req, res) => {
   newWorkshop = new workshopProfile({
     category: req.body.category,
     title: req.body.title,
+    description: req.body.description,
     vacancies: req.body.vacancies,
     dateStart: req.body.dateStart,
     courseStartTime: req.body.courseStartTime,
@@ -83,23 +100,39 @@ app.post("/wsusernew", async (req, res) => {
     location: req.body.location,
     participantList: req.body.participantList,
   });
-  await newWorkshop.save();
-  res.redirect("/user");
-  //   res.json({ status: "ok,", msg: "saved" });
+  let response = await newWorkshop.save();
+  // res.redirect("/user");
+  res.json({ status: "ok,", msg: "saved" });
+  console.log("Created: ", response);
 });
+
+//seed some workshops
+const ws_seed = require("./models/ws_seed");
+app.post("/wsseed", async (req, res) => {
+  await workshopProfile.deleteMany({});
+  await workshopProfile.create(ws_seed, (err, data) => {
+    if (err) console.log(err);
+    else {
+      res.json({ status: "ok", msg: "seeded" });
+      console.log("seeded: ", data);
+    }
+  });
+});
+
 //delete by ID
-app.delete("/ws/:id", async (req, res) => {
+app.delete("/wsdelete/:id", async (req, res) => {
   try {
     let response = await workshopProfile.findByIdAndDelete(req.params.id);
     //   res.json({ status: "ok", msg: "deleted" });
-    // console.log("deleting one by id: ", response);
+    console.log("deleting one by id: ", response);
     res.send(response);
   } catch (err) {
     console.log(err);
   }
 });
+
 //update by ID
-app.put("/ws/:id", async (req, res) => {
+app.put("/wsupdate/:id", async (req, res) => {
   try {
     let response = await workshopProfile.findByIdAndUpdate(
       req.params.id,
@@ -113,18 +146,6 @@ app.put("/ws/:id", async (req, res) => {
   }
 });
 
-// app.delete("/all/:id", async (req, res) => {
-//   await ToDo.findByIdAndDelete(req.params.id, {
-//     useFindAndModify: false,
-//   });
-
-//   res.send("Deleted");
-// });
-
-// app.get("/all", (req, res) => {
-//   res.send("all");
-// });
-
-app.listen(7000, () => {
-  console.log("listening");
+app.listen(5000, () => {
+  console.log("listening at port 5000");
 });
