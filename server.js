@@ -1,27 +1,98 @@
 const express = require("express");
 const app = express();
+const cors = require("cors");
 const mongoose = require("mongoose");
+const session = require("express-session");
+const MongoDBStore = require("connect-mongodb-session")(session);
 const userProfile = require("./models/userProfileSchema");
 const workshopProfile = require("./models/workshopSchema");
-const cors = require("cors");
+const bcrypt = require("bcrypt");
+
+require("dotenv").config();
+const PORT = process.env.PORT;
+const mongodbURI = process.env.MONGODBURI;
+const salt = process.env.SECRET;
+
+const store = new MongoDBStore({
+  uri: mongodbURI,
+  collection: "currentSessions",
+});
 
 app.use(express.json()); //to ensure that the data is in a JSON format
 app.use(cors());
 app.use(express.urlencoded({ extended: false }));
+app.use(
+  session({
+    secret: process.env.SECRET, //a random string do not copy this value or your stuff will get hacked
+    resave: false, // default more info: https://www.npmjs.com/package/express-session#resave
+    saveUninitialized: false, // default  more info: https://www.npmjs.com/package/express-session#resave
+    store: store,
+    maxAge: 365 * 24 * 60 * 60 * 1000,
+  })
+);
 
-mongoose.connect("mongodb://localhost:27017/mycorr", {
+mongoose.connect(mongodbURI, {
   useNewUrlParser: true,
 });
-// mongoose.connection.once("open", () => {
-//   console.log("connected to mongo");
-// });
 
-//user profile collection
+// ******************************
+//
+// user login and auth
+//
+// ******************************
+
+//generate hashPassword when user registers for a new account that includes a user password
+//store the hashPassword in the user profile
+app.get("/get-hash", async (req, res) => {
+  // console.log("salt: ", salt);
+  // res.send(salt);
+  // const userPassword = req.body.password;
+  const userPassword = "test_password";
+  const password = userPassword + salt;
+  console.log("password: ", password);
+  // res.send(password);
+  const hashPassword = await bcrypt.hash(password, 12);
+  req.session.hashPassword = hashPassword;
+  console.log("hashPassword: ", hashPassword);
+  res.send(hashPassword);
+});
+
+//login
+app.post("/login", async (req, res) => {
+  //retrieve your username & email, check it exists and retrieve the hash
+  //retrieve your salt
+  //add salt to your password
+
+  // const password = req.body.password;
+  const userPassword = "test_password";
+  const hash = "$2b$12$WOXnSELtdQJORJh2qquUuO9oiaaPFI5dHn2uTBuHg7lkrkDrOeXMC";
+
+  const password = userPassword + salt;
+
+  const valid = await bcrypt.compare(password, hash);
+
+  if (valid) {
+    req.session.auth = true;
+    res.json({ status: "ok", msg: "you are logged in" });
+  } else {
+    req.session.auth = false;
+    res
+      .status(403)
+      .json({ status: "unauthorised", msg: "you are not logged in" });
+  }
+});
+
+// ******************************
+//
+// user profile collection
+//
+// ******************************
 //show everything
 app.get("/userindex", async (req, res) => {
   const findUserProfile = await userProfile.find();
   res.json(findUserProfile);
 });
+
 //create new userID
 app.post("/usernew", async (req, res) => {
   try {
@@ -146,6 +217,6 @@ app.put("/wsupdate/:id", async (req, res) => {
   }
 });
 
-app.listen(5000, () => {
-  console.log("listening at port 5000");
+app.listen(PORT, () => {
+  console.log("listening ... ");
 });
