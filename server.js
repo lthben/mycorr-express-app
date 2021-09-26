@@ -18,8 +18,8 @@ const store = new MongoDBStore({
   collection: "currentSessions",
 });
 
-app.use(express.json()); //to ensure that the data is in a JSON format
 app.use(cors());
+app.use(express.json()); //to ensure that the data is in a JSON format
 app.use(express.urlencoded({ extended: false }));
 app.use(
   session({
@@ -31,8 +31,22 @@ app.use(
   })
 );
 
-mongoose.connect(mongodbURI, {
-  useNewUrlParser: true,
+const connectDB = async (uri) => {
+  try {
+    await mongoose.connect(uri, {
+      useNewUrlParser: true,
+    });
+    console.log("DB connected");
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+};
+connectDB(mongodbURI);
+
+app.all("/", (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  next();
 });
 
 // ******************************
@@ -43,42 +57,60 @@ mongoose.connect(mongodbURI, {
 
 //generate hashPassword when user registers for a new account that includes a user password
 //store the hashPassword in the user profile
-app.get("/get-hash", async (req, res) => {
+app.post("/get-hash", async (req, res) => {
   // console.log("salt: ", salt);
   // res.send(salt);
-  // const userPassword = req.body.password;
-  const userPassword = "test_password";
+  const userPassword = req.body.password;
+  console.log("userPassword: ", userPassword);
+  // const userPassword = "test_password";
   const password = userPassword + salt;
   console.log("password: ", password);
   // res.send(password);
   const hashPassword = await bcrypt.hash(password, 12);
-  req.session.hashPassword = hashPassword;
   console.log("hashPassword: ", hashPassword);
-  res.send(hashPassword);
+  res.json({ status: "ok", msg: hashPassword });
 });
 
 //login
 app.post("/login", async (req, res) => {
-  //retrieve your username & email, check it exists and retrieve the hash
+  //retrieve your email & user password, check email exists and if yes, then retrieve the hash from the user profile
   //retrieve your salt
-  //add salt to your password
+  //add salt to the user password
+  //compare userPassword + salt to the stored hash
 
-  // const password = req.body.password;
-  const userPassword = "test_password";
-  const hash = "$2b$12$WOXnSELtdQJORJh2qquUuO9oiaaPFI5dHn2uTBuHg7lkrkDrOeXMC";
+  const email = req.body.email;
 
-  const password = userPassword + salt;
+  let hash = "";
+  let valid = false;
+  const user = await userProfile.findOne({ email: email }, "hashPassword");
+  if (user) {
+    hash = user.hashPassword;
+    console.log("user found: ", user);
+  } else {
+    console.log("user does not exist");
+    res.status(404).json({
+      status: "user not found",
+      msg: "User not found. Please try again.",
+    });
+    return;
+  }
 
-  const valid = await bcrypt.compare(password, hash);
+  let password = req.body.password;
+  password = password + salt;
+
+  valid = await bcrypt.compare(password, hash);
 
   if (valid) {
     req.session.auth = true;
     res.json({ status: "ok", msg: "you are logged in" });
+    console.log("yes you're logged in");
   } else {
     req.session.auth = false;
-    res
-      .status(403)
-      .json({ status: "unauthorised", msg: "you are not logged in" });
+    res.status(403).json({
+      status: "unauthorised",
+      msg: "Wrong password. Please try again.",
+    });
+    console.log("unauthorised, you are not logged in");
   }
 });
 
@@ -96,14 +128,16 @@ app.get("/userindex", async (req, res) => {
 //create new userID
 app.post("/usernew", async (req, res) => {
   try {
-    newUser = new userProfile({
-      name: req.body.name,
-      email: req.body.email,
-      enrolment: req.body.enrolment,
-    });
+    // newUser = new userProfile({
+    //   firstName: req.body.firstName,
+    //   lastName: req.body.lastName,
+    //   email: req.body.email,
+    //   hashPassword: req.body.hashPassword,
+    // });
+    newUser = new userProfile(req.body);
     let response = await newUser.save();
     console.log("created: ", response);
-    res.send(response);
+    res.json({ status: "ok", msg: response });
     // res.redirect("/");
     //   res.json({ status: "ok,", msg: "saved" });
   } catch (err) {
@@ -135,6 +169,13 @@ app.delete("/userdelete/:id", async (req, res) => {
     console.log(err);
   }
 });
+
+app.delete("/userdeleteall", async (req, res) => {
+  let response = await userProfile.deleteMany({});
+  console.log("deleted all user profiles");
+  res.send(response);
+});
+
 //update by ID
 app.put("/userupdate/:id", async (req, res) => {
   try {

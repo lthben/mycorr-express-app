@@ -1,16 +1,19 @@
 module.exports = [
   {
-    name: "Betty",
+    firstName: "Betty",
+    lastName: "Choo",
     email: "betty@yahoo.com",
     enrolment: [],
   },
   {
-    name: "Asthon",
+    firstName: "Asthon",
+    lastName: "Liew",
     email: "asthon@hotmail.com",
     enrolment: [],
   },
   {
-    name: "Carl",
+    firstName: "Carl",
+    lastName: "Junior",
     email: "carl@gmail.com",
     enrolment: [],
   },
