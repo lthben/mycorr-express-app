@@ -23,4 +23,27 @@ module.exports = [
     location: "Remote on Zoom",
     participantList: [],
   },
+  {
+    category: "Electronics",
+    title: "Solar Jar",
+    description: "Assemble a solar jar electronics kit on a breadboard",
+    vacancies: 4,
+    dateStart: "15 Nov 2021",
+    courseStartTime: "3.00pm",
+    courseEndTime: "5.00pm",
+    location: "Remote on Zoom",
+    participantList: [],
+  },
+  {
+    category: "Electronics",
+    title: "Indoor Plant Kit",
+    description:
+      "Assemble an automatic self-watering indoor plant kit using the BBC micro:bit",
+    vacancies: 5,
+    dateStart: "21 Nov 2021",
+    courseStartTime: "3.00pm",
+    courseEndTime: "5.00pm",
+    location: "Remote on Zoom",
+    participantList: [],
+  },
 ];

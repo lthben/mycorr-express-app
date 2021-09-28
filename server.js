@@ -133,6 +133,52 @@ app.get("/userindex", async (req, res) => {
   res.json(findUserProfile);
 });
 
+//get a single user by Id
+app.get("/user/:id", async (req, res) => {
+  const user = await userProfile.findById(req.params.id);
+  res.json(user);
+  console.log("user found: ", user);
+});
+
+//withdraw a user from a workshop and update the user and workshop
+app.put("/dowan", async (req, res) => {
+  const userId = req.body.userId;
+  const workshopId = req.body.workshopId;
+  // console.log("userId: ", userId);
+  console.log("workshopId: ", workshopId);
+  const user = await userProfile.findById(userId);
+  console.log("enrolments: ", user.enrolment);
+  let _enrolment = user.enrolment;
+  let filtered = _enrolment.filter((enrolment) => {
+    return enrolment.id !== workshopId;
+  });
+  // console.log("filtered: ", filtered);
+  let response = await userProfile.findByIdAndUpdate(
+    userId,
+    { enrolment: filtered },
+    { new: true }
+  );
+  // console.log("response: ", response);
+  // res.json({ status: "ok", msg: "updated user profile" });
+
+  const workshop = await workshopProfile.findById(workshopId);
+  let _vacancies = workshop.vacancies;
+  _vacancies += 1;
+  let _participantList = workshop.participantList;
+  filtered = _participantList.filter((participant) => {
+    return participant.id !== userId;
+  });
+  response = await workshopProfile.findByIdAndUpdate(
+    workshopId,
+    {
+      participantList: filtered,
+      vacancies: _vacancies,
+    },
+    { new: true }
+  );
+  res.json({ status: "ok", msg: "yes, dowan ok" });
+});
+
 //create new userID
 app.post("/usernew", async (req, res) => {
   try {
