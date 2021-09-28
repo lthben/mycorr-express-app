@@ -82,9 +82,17 @@ app.post("/login", async (req, res) => {
 
   let hash = "";
   let valid = false;
-  const user = await userProfile.findOne({ email: email }, "hashPassword");
+  const user = await userProfile.findOne({ email: email });
+  let userInfo = {};
   if (user) {
     hash = user.hashPassword;
+    userInfo = {
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      enrolment: user.enrolment,
+    };
     console.log("user found: ", user);
   } else {
     console.log("user does not exist");
@@ -102,7 +110,7 @@ app.post("/login", async (req, res) => {
 
   if (valid) {
     req.session.auth = true;
-    res.json({ status: "ok", msg: "you are logged in" });
+    res.json({ status: "ok", msg: "you are logged in", userInfo: userInfo });
     console.log("yes you're logged in");
   } else {
     req.session.auth = false;
@@ -128,16 +136,17 @@ app.get("/userindex", async (req, res) => {
 //create new userID
 app.post("/usernew", async (req, res) => {
   try {
-    // newUser = new userProfile({
-    //   firstName: req.body.firstName,
-    //   lastName: req.body.lastName,
-    //   email: req.body.email,
-    //   hashPassword: req.body.hashPassword,
-    // });
     newUser = new userProfile(req.body);
     let response = await newUser.save();
     console.log("created: ", response);
-    res.json({ status: "ok", msg: response });
+    let userInfo = {
+      id: response._id,
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      email: req.body.email,
+      enrolment: [],
+    };
+    res.json({ status: "ok", msg: response, userInfo: userInfo });
     // res.redirect("/");
     //   res.json({ status: "ok,", msg: "saved" });
   } catch (err) {
@@ -170,6 +179,7 @@ app.delete("/userdelete/:id", async (req, res) => {
   }
 });
 
+//delete all users
 app.delete("/userdeleteall", async (req, res) => {
   let response = await userProfile.deleteMany({});
   console.log("deleted all user profiles");
@@ -179,10 +189,14 @@ app.delete("/userdeleteall", async (req, res) => {
 //update by ID
 app.put("/userupdate/:id", async (req, res) => {
   try {
-    let response = await userProfile.findByIdAndUpdate(req.params.id, req.body);
+    let response = await userProfile.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
     console.log("user update by ID: ", response);
-    //   res.json({ status: "ok", msg: "updated" });
-    res.send(response);
+    res.json({ status: "ok", msg: "updated", updatedUser: response });
+    // res.send(response);
   } catch (err) {
     console.log(err);
   }
@@ -197,6 +211,7 @@ app.put("/userupdate/:id", async (req, res) => {
 app.get("/wsindex", async (req, res) => {
   const findworkshopProfile = await workshopProfile.find();
   res.json(findworkshopProfile);
+  console.log(findworkshopProfile);
 });
 
 //create new workshop profile
@@ -248,11 +263,12 @@ app.put("/wsupdate/:id", async (req, res) => {
   try {
     let response = await workshopProfile.findByIdAndUpdate(
       req.params.id,
-      req.body
+      req.body,
+      { new: true }
     );
     console.log(response);
-    //   res.json({ status: "ok", msg: "updated" });
-    res.send(response);
+    res.json({ status: "ok", msg: "updated", updatedWorkshop: response });
+    // res.send(response);
   } catch (err) {
     console.log(err);
   }

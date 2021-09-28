@@ -4,7 +4,7 @@ module.exports = [
     title: "Water Future",
     description:
       "Learn to code with Scratch by building a water sustainability app",
-    vacancies: 8,
+    vacancies: 2,
     dateStart: "30 Oct 2021",
     courseStartTime: "10.00am",
     courseEndTime: "12.00pm",
