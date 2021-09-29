@@ -140,6 +140,63 @@ app.get("/user/:id", async (req, res) => {
   console.log("user found: ", user);
 });
 
+//Register a user for a workshop and update the user enrolment and workshop participant list. Checks for duplicate signups.
+app.put("/iwan", async (req, res) => {
+  const userId = req.body.userId;
+  const workshopId = req.body.workshopId;
+  // console.log("userId: ", userId);
+  // console.log("workshopId: ", workshopId);
+  const user = await userProfile.findById(userId);
+  let _enrolment = user.enrolment;
+  // console.log("_enrolment: ", _enrolment);
+  const arrIndex = _enrolment.findIndex((enrolment, index) => {
+    // console.log("index: ", index);
+    // console.log("enrolment.id: ", enrolment.id);
+    return enrolment.id === workshopId;
+  });
+  // console.log("arrIndex: ", arrIndex);
+  if (arrIndex !== -1) {
+    //an index was found, means cannot cos workshop there already
+    res.json({
+      status: "rejected",
+      msg: "You have already registered for this workshop",
+    });
+    return;
+  }
+  const workshop = await workshopProfile.findById(workshopId);
+  const workshopObj = {
+    //in user profile enrolment list
+    id: workshop.id,
+    category: workshop.category,
+    title: workshop.title,
+    dateStart: workshop.dateStart,
+    courseStartTime: workshop.courseStartTime,
+    courseEndTime: workshop.courseEndTime,
+  };
+  _enrolment.push(workshopObj);
+  await userProfile.findByIdAndUpdate(userId, { enrolment: _enrolment });
+  // console.log("response: ", response);
+  let _vacancies = workshop.vacancies;
+  _vacancies -= 1;
+  let userObj = {
+    //in workshop profile participant list
+    id: user._id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+  };
+  let _participantList = workshop.participantList;
+  _participantList.push(userObj);
+  await workshopProfile.findByIdAndUpdate(workshopId, {
+    participantList: _participantList,
+    vacancies: _vacancies,
+  });
+  res.json({
+    status: "ok",
+    msg: "workshop participant list updated successfully",
+  });
+});
+
 //withdraw a user from a workshop and update the user and workshop
 app.put("/dowan", async (req, res) => {
   const userId = req.body.userId;
