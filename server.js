@@ -378,5 +378,5 @@ app.put("/wsupdate/:id", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log("listening ... ");
+  console.log("listening on port: ", PORT);
 });
